@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Closet</title>
+  <meta name="description" content="Your wardrobe, digitized.">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Closet">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+  <script>
+    // Apply a saved light/dark override before first paint to avoid a flash.
+    try {
+      const theme = localStorage.getItem('appearance');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <main>
+    <section id="view-closet" class="view" aria-labelledby="closet-title">
+      <header class="screen-header">
+        <h1 id="closet-title">Closet</h1>
+        <div class="header-actions">
+          <button type="button" class="icon-button" id="open-settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+          </button>
+          <button type="button" class="icon-button" id="add-item" aria-label="Add item">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="chips" id="category-filter" role="toolbar" aria-label="Filter by category" hidden></div>
+      <div class="grid" id="closet-grid" hidden></div>
+      <p class="filter-empty" id="filter-empty" hidden></p>
+
+      <div class="empty-state" id="closet-empty" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2V7.4a2.1 2.1 0 1 0-2.1-2.1"/><path d="M12 8.2 3 15.3a1.4 1.4 0 0 0 .9 2.5h16.2a1.4 1.4 0 0 0 .9-2.5Z"/></svg>
+        <h2>Your closet is empty</h2>
+        <p>Photograph a piece laid flat or worn. We'll lift it off the background.</p>
+        <button type="button" class="button-primary" id="empty-add">Add Your First Piece</button>
+      </div>
+    </section>
+
+    <section id="view-canvas" class="view" aria-labelledby="canvas-title" hidden>
+      <header class="screen-header">
+        <h1 id="canvas-title">Canvas</h1>
+      </header>
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 8 12 13l9.5-5Z"/><path d="m2.5 12.5 9.5 5 9.5-5"/></svg>
+        <h2>Outfit Canvas</h2>
+        <p id="canvas-message">Add a few pieces to your closet, then come back here to mix and match.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tab-bar" aria-label="Sections">
+    <button type="button" class="tab" data-tab="closet">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2V7.4a2.1 2.1 0 1 0-2.1-2.1"/><path d="M12 8.2 3 15.3a1.4 1.4 0 0 0 .9 2.5h16.2a1.4 1.4 0 0 0 .9-2.5Z"/></svg>
+      <span>Closet</span>
+    </button>
+    <button type="button" class="tab" data-tab="canvas">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 8 12 13l9.5-5Z"/><path d="m2.5 12.5 9.5 5 9.5-5"/><path d="m2.5 17 9.5 5 9.5-5"/></svg>
+      <span>Canvas</span>
+    </button>
+  </nav>
+
+  <!-- Without a `capture` attribute iOS offers Photo Library / Take Photo / Choose File. -->
+  <input type="file" id="photo-input" class="visually-hidden" accept="image/*" tabindex="-1" aria-hidden="true">
+
+  <dialog class="sheet sheet--tall" id="add-sheet" aria-labelledby="add-title">
+    <div class="sheet-header">
+      <button type="button" class="text-button" id="add-cancel">Cancel</button>
+      <h2 class="sheet-title" id="add-title">New Item</h2>
+      <button type="button" class="text-button text-button--bold" id="add-save" disabled>Save</button>
+    </div>
+    <div class="sheet-body">
+      <div class="preview">
+        <img id="add-source" class="preview-source" alt="">
+        <img id="add-cutout" class="preview-cutout" alt="Item with background removed" hidden>
+        <div class="status-pill" id="add-status" role="status">
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="add-status-text">Preparing photo…</span>
+        </div>
+        <div class="failure" id="add-failure" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>
+          <p id="add-failure-text"></p>
+          <button type="button" class="button-primary" id="add-retry">Try Again</button>
+          <button type="button" class="button-link" id="add-use-original">Use Original Photo</button>
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="eyebrow">Name</span>
+        <input type="text" class="text-input" id="add-name" placeholder="e.g. Black linen shirt" autocomplete="off" enterkeyhint="done">
+      </label>
+
+      <div class="field">
+        <span class="eyebrow" id="add-category-label">Category</span>
+        <div class="chips chips--bleed" id="add-category" role="group" aria-labelledby="add-category-label"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="sheet sheet--tall" id="item-sheet" aria-labelledby="item-name">
+    <div class="sheet-header">
+      <span></span>
+      <span></span>
+      <button type="button" class="text-button text-button--bold" id="item-done">Done</button>
+    </div>
+    <div class="sheet-body">
+      <div class="detail-image"><img id="item-image" alt=""></div>
+      <div class="detail-meta">
+        <span class="eyebrow" id="item-category"></span>
+        <h2 id="item-name"></h2>
+        <p id="item-date"></p>
+      </div>
+      <button type="button" class="button-danger" id="item-delete">Delete Item</button>
+    </div>
+  </dialog>
+
+  <dialog class="sheet" id="settings-sheet" aria-labelledby="settings-title">
+    <div class="sheet-header">
+      <span></span>
+      <h2 class="sheet-title" id="settings-title">Settings</h2>
+      <button type="button" class="text-button text-button--bold" id="settings-done">Done</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <span class="eyebrow" id="appearance-label">Appearance</span>
+        <div class="segmented" role="group" aria-labelledby="appearance-label">
+          <button type="button" data-appearance="system">System</button>
+          <button type="button" data-appearance="light">Light</button>
+          <button type="button" data-appearance="dark">Dark</button>
+        </div>
+      </div>
+      <p class="settings-note">Your closet is stored only on this device. Nothing is uploaded, including your photos.</p>
+    </div>
+  </dialog>
+</body>
+</html>
