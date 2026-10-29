@@ -3,8 +3,9 @@
 // Library code from esm.sh: cache first (versioned URLs never change).
 // The background-removal model caches itself.
 
-const SHELL_CACHE = 'closet-shell-v1';
+const SHELL_CACHE = 'closet-shell-v2';
 const LIBRARY_CACHE = 'closet-lib-v1';
+const LIBRARY_HOSTS = ['esm.sh', 'cdn.jsdelivr.net'];
 
 const SHELL_FILES = [
   './',
@@ -16,10 +17,14 @@ const SHELL_FILES = [
   './js/background-removal.js',
   './js/categories.js',
   './js/closet.js',
+  './js/clothing-ai.js',
   './js/db.js',
   './js/images.js',
+  './js/labels.js',
+  './js/pieces.js',
   './js/settings.js',
   './js/ui.js',
+  './models/label-embeddings.json',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -46,7 +51,7 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin === self.location.origin) {
     event.respondWith(networkFirst(request));
-  } else if (url.hostname === 'esm.sh') {
+  } else if (LIBRARY_HOSTS.includes(url.hostname)) {
     event.respondWith(cacheFirst(request));
   }
 });

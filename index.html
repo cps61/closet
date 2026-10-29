@@ -46,8 +46,8 @@
       <div class="empty-state" id="closet-empty" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2V7.4a2.1 2.1 0 1 0-2.1-2.1"/><path d="M12 8.2 3 15.3a1.4 1.4 0 0 0 .9 2.5h16.2a1.4 1.4 0 0 0 .9-2.5Z"/></svg>
         <h2>Your closet is empty</h2>
-        <p>Photograph a piece laid flat or worn. We'll lift it off the background.</p>
-        <button type="button" class="button-primary" id="empty-add">Add Your First Piece</button>
+        <p>Add photos of clothes laid flat, or of you wearing them. Each piece is cut out and named for you.</p>
+        <button type="button" class="button-primary" id="empty-add">Add Photos</button>
       </div>
     </section>
 
@@ -75,18 +75,17 @@
   </nav>
 
   <!-- Without a `capture` attribute iOS offers Photo Library / Take Photo / Choose File. -->
-  <input type="file" id="photo-input" class="visually-hidden" accept="image/*" tabindex="-1" aria-hidden="true">
+  <input type="file" id="photo-input" class="visually-hidden" accept="image/*" multiple tabindex="-1" aria-hidden="true">
 
   <dialog class="sheet sheet--tall" id="add-sheet" aria-labelledby="add-title">
     <div class="sheet-header">
       <button type="button" class="text-button" id="add-cancel">Cancel</button>
       <h2 class="sheet-title" id="add-title">New Item</h2>
-      <button type="button" class="text-button text-button--bold" id="add-save" disabled>Save</button>
+      <button type="button" class="text-button text-button--bold" id="add-skip" hidden>Skip</button>
     </div>
     <div class="sheet-body">
-      <div class="preview">
+      <div class="preview" id="add-progress">
         <img id="add-source" class="preview-source" alt="">
-        <img id="add-cutout" class="preview-cutout" alt="Item with background removed" hidden>
         <div class="status-pill" id="add-status" role="status">
           <span class="spinner" aria-hidden="true"></span>
           <span id="add-status-text">Preparing photo…</span>
@@ -95,19 +94,15 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>
           <p id="add-failure-text"></p>
           <button type="button" class="button-primary" id="add-retry">Try Again</button>
-          <button type="button" class="button-link" id="add-use-original">Use Original Photo</button>
+          <button type="button" class="button-link" id="add-use-whole">Use Whole Photo</button>
         </div>
       </div>
 
-      <label class="field">
-        <span class="eyebrow">Name</span>
-        <input type="text" class="text-input" id="add-name" placeholder="e.g. Black linen shirt" autocomplete="off" enterkeyhint="done">
-      </label>
-
-      <div class="field">
-        <span class="eyebrow" id="add-category-label">Category</span>
-        <div class="chips chips--bleed" id="add-category" role="group" aria-labelledby="add-category-label"></div>
-      </div>
+      <p class="pieces-summary" id="add-summary" hidden></p>
+      <div class="pieces" id="add-pieces" hidden></div>
+    </div>
+    <div class="sheet-footer" id="add-footer" hidden>
+      <button type="button" class="button-primary button-block" id="add-save">Add Item</button>
     </div>
   </dialog>
 

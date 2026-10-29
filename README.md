@@ -26,19 +26,40 @@ leave your phone.
 **Updating:** upload the changed files to the same repository again. The app
 picks up the new version the next time you open it.
 
-## How background removal works
+## How the AI works
 
-The first time you add an item, the app downloads an AI model (~80 MB, so use
-Wi-Fi). After that it runs entirely on your iPhone's GPU, offline, in about a
-second or two per photo. It uses IMG.LY's open-source
-[background-removal](https://github.com/imgly/background-removal-js) library
-(AGPL licensed, free to use here).
+Add one photo or many at once: clothes laid flat, or photos of you wearing them.
+
+- **Photo of you wearing an outfit:** each piece (top, pants, shoes, hat, bag,
+  scarf) is cut out separately. Tap a piece to leave it out.
+- **Photo of one item:** the item is cut out from the background.
+- **Every piece is identified and named automatically**, e.g. "Navy hoodie" in
+  Tops or "White sneakers" in Shoes. You can fix the name or category before saving.
+
+Everything runs on the phone, offline after the first use, and no photo is ever
+uploaded. The first photo downloads three free AI models once (~185 MB, so use
+Wi-Fi):
+
+| Job | Model | License |
+|---|---|---|
+| Remove background | [IMG.LY background-removal](https://github.com/imgly/background-removal-js) (ISNet) | AGPL |
+| Find each garment on a person | [SegFormer clothes](https://huggingface.co/Xenova/segformer_b2_clothes) | MIT |
+| Identify the type (hoodie, jeans…) | [Marqo-FashionSigLIP](https://huggingface.co/Marqo/marqo-fashionSigLIP) | Apache 2.0 |
+
+The text side of FashionSigLIP is run once ahead of time (see
+`tools/embed-labels.html`), and its output is saved in
+`models/label-embeddings.json`, so the phone only downloads the image side.
+To add a clothing type, add it to `js/labels.js`, run
+`python tools/dev_server.py`, open http://localhost:8123/tools/embed-labels.html
+and upload the regenerated `models/label-embeddings.json`.
 
 ## Good to know
 
 - **Your closet lives on this phone only.** Deleting the home-screen app or
   clearing Safari's website data erases it. A backup/export feature is planned.
-- To try changes on a computer, run `python -m http.server 8123` in this folder
+- Parts of a garment hidden in the photo (an arm across a shirt, a bag strap)
+  show up as gaps in the cutout. A clean photo of the item fixes that later.
+- To try changes on a computer, run `python tools/dev_server.py` in this folder
   and open http://localhost:8123.
 
 ## Structure
@@ -51,13 +72,18 @@ css/app.css           Design system, light/dark themes, animations
 js/
 ├── app.js                 Startup, tab navigation
 ├── closet.js              Gallery grid, filters, item detail, delete
-├── add-item.js            Photo → background removal → name/category → save
-├── background-removal.js  On-device AI background removal
-├── images.js              Resize/orient photos, trim transparent edges
+├── add-item.js            Import flow: photo queue → AI → review → save
+├── pieces.js              One photo → cut-out, recognized, named pieces
+├── clothing-ai.js         Garment segmentation + type recognition models
+├── background-removal.js  Background removal model
+├── labels.js              Clothing types the app recognizes
+├── images.js              Photo prep, masks, trimming, color naming
 ├── db.js                  On-device storage (IndexedDB)
 ├── settings.js            Appearance (System / Light / Dark)
 ├── ui.js                  Sheets, category chips
 └── categories.js          Categories and canvas layer order
+models/label-embeddings.json  Precomputed clothing-type text embeddings
+tools/                Dev server + embedding generator (not needed on GitHub)
 icons/                Home-screen icons
 ```
 
