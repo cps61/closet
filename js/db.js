@@ -1,8 +1,9 @@
 // On-device storage (IndexedDB). Images are stored as Blobs alongside their metadata.
 //
 // Item shape:
-//   { id, name, category, cutout: Blob (PNG, transparent), original: Blob (JPEG),
-//     width, height, createdAt }
+//   { id, name, category, cutout: Blob (PNG, transparent), original: Blob (JPEG,
+//     the whole photo it came from), labelId (e.g. 'hoodie', or null),
+//     color (e.g. 'navy', or null), width, height, createdAt }
 
 const DB_NAME = 'closet';
 const DB_VERSION = 1;

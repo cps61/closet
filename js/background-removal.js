@@ -28,21 +28,17 @@ function loadLibrary() {
 const supportsWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
 
 /**
- * Returns a PNG Blob of `image` with everything but the main subject transparent.
- * `onProgress({ phase: 'download' | 'process', percent? })` reports progress.
+ * Returns a PNG Blob, same size as `image`, with everything but the main subject
+ * transparent. `onDownload({ file, loaded, total })` reports first-run downloads.
  */
-export async function removeBackground(image, { onProgress } = {}) {
+export async function removeBackground(image, { onDownload } = {}) {
   const library = await loadLibrary();
   const remove = library.removeBackground ?? library.default;
 
   const config = {
     output: { format: 'image/png' },
     progress: (key, current, total) => {
-      if (key.startsWith('fetch') && total > 0) {
-        onProgress?.({ phase: 'download', percent: Math.round((current / total) * 100) });
-      } else {
-        onProgress?.({ phase: 'process' });
-      }
+      if (key.startsWith('fetch') && total > 0) onDownload?.({ file: key, loaded: current, total });
     },
   };
 

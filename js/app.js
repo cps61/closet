@@ -1,4 +1,4 @@
-import { initAddItem, startAddFlow } from './add-item.js';
+import { initAddItem, startImport } from './add-item.js';
 import { initCloset, reloadCloset } from './closet.js';
 import { initSettings } from './settings.js';
 
@@ -11,9 +11,9 @@ function requestPhoto() {
 }
 
 photoInput.addEventListener('change', () => {
-  const file = photoInput.files?.[0];
-  photoInput.value = ''; // so picking the same photo again still fires `change`
-  if (file) startAddFlow(file);
+  const files = [...(photoInput.files ?? [])];
+  photoInput.value = ''; // so picking the same photos again still fires `change`
+  if (files.length) startImport(files);
 });
 
 function showTab(name) {
