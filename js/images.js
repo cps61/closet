@@ -34,7 +34,7 @@ function canvasToBlob(canvas, type, quality) {
  * Draws the photo upright (browsers apply EXIF orientation) and caps its longest
  * side, so a 48 MP camera photo doesn't exhaust memory or slow the models down.
  */
-export function prepareImage(file, maxDimension = 1600) {
+export function prepareImage(file, maxDimension = 1280) {
   return withImage(file, (image) => {
     const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = createCanvas(Math.round(image.naturalWidth * scale), Math.round(image.naturalHeight * scale));

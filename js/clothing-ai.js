@@ -6,7 +6,7 @@
 //    embeddings for our label list are precomputed in models/label-embeddings.json,
 //    so the phone never downloads the text encoder.
 //
-// Both run through Transformers.js on WebGPU when available, otherwise WebAssembly.
+// Both run through Transformers.js on the CPU (WebAssembly); see loadOnCpu.
 // Model files download once (~110 MB together) and are cached by the browser.
 
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.2';
@@ -40,31 +40,13 @@ function loadTransformers() {
   return transformersPromise;
 }
 
-let backendPromise;
-function pickBackend() {
-  backendPromise ??= (async () => {
-    try {
-      const adapter = await navigator.gpu?.requestAdapter();
-      if (adapter) return { device: 'webgpu', fp16: adapter.features.has('shader-f16') };
-    } catch {
-      // fall through to WebAssembly
-    }
-    return { device: 'wasm', fp16: false };
-  })();
-  return backendPromise;
-}
-
-/** Loads on WebGPU when possible, falling back to WebAssembly if that fails. */
-async function loadOnBestDevice(load, { gpuFp16, gpu, wasm }) {
-  const backend = await pickBackend();
-  if (backend.device === 'webgpu') {
-    try {
-      return await load({ device: 'webgpu', dtype: backend.fp16 ? gpuFp16 : gpu });
-    } catch (error) {
-      console.warn('WebGPU model load failed, using WebAssembly', error);
-    }
-  }
-  return load({ device: 'wasm', dtype: wasm });
+/**
+ * These models run on the CPU (WebAssembly). The GPU is left to background
+ * removal: a second WebGPU runtime in the same page made iOS Safari run out of
+ * memory and close the app. Both models are small enough to be quick on the CPU.
+ */
+function loadOnCpu(load, dtype) {
+  return load({ device: 'wasm', dtype });
 }
 
 function memoize(factory) {
@@ -80,9 +62,9 @@ function memoize(factory) {
 
 const loadSegmenter = memoize(async () => {
   const { pipeline } = await loadTransformers();
-  return loadOnBestDevice(
+  return loadOnCpu(
     (options) => pipeline('image-segmentation', SEGMENTER_ID, { ...options, progress_callback: forwardProgress }),
-    { gpuFp16: 'fp16', gpu: 'q8', wasm: 'q8' },
+    'q8',
   );
 });
 
@@ -90,10 +72,10 @@ const loadRecognizer = memoize(async () => {
   const transformers = await loadTransformers();
   const [processor, model, embeddings] = await Promise.all([
     transformers.AutoProcessor.from_pretrained(MODEL_ID, { progress_callback: forwardProgress }),
-    loadOnBestDevice(
+    loadOnCpu(
       (options) =>
         transformers.SiglipVisionModel.from_pretrained(MODEL_ID, { ...options, progress_callback: forwardProgress }),
-      { gpuFp16: 'q4f16', gpu: 'q4', wasm: 'q4' },
+      'q4',
     ),
     fetch(new URL('../models/label-embeddings.json', import.meta.url)).then((response) => {
       if (!response.ok) throw new Error(`Label embeddings missing (${response.status})`);

@@ -1,5 +1,6 @@
 import { initAddItem, startImport } from './add-item.js';
 import { initCloset, reloadCloset } from './closet.js';
+import { ANALYSIS_RUNNING, SMART_DETECTION, getPref, setPref } from './prefs.js';
 import { initSettings } from './settings.js';
 import { closeSheet, openSheet, setupSheet } from './ui.js';
 
@@ -12,11 +13,16 @@ const views = { closet: $('view-closet'), canvas: $('view-canvas') };
 const toast = $('toast');
 let toastTimer;
 
-function showError(message) {
-  toast.textContent = `Something went wrong: ${message}`;
+function showToast(text, { notice = false, duration = 10000 } = {}) {
+  toast.textContent = text;
+  toast.classList.toggle('toast--notice', notice);
   toast.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (toast.hidden = true), 10000);
+  toastTimer = setTimeout(() => (toast.hidden = true), duration);
+}
+
+function showError(message) {
+  showToast(`Something went wrong: ${message}`);
 }
 toast.addEventListener('click', () => (toast.hidden = true));
 window.addEventListener('error', (event) => showError(event.message));
@@ -78,6 +84,20 @@ document.addEventListener('closet:changed', ({ detail: { count } }) => {
 });
 
 // ---------- Start ----------
+
+// The previous launch was closed in the middle of analyzing a photo: iOS ends
+// pages that use too much memory. Fall back to background removal only, so it
+// can't happen again in a loop; the user can re-enable it in Settings.
+if (getPref(ANALYSIS_RUNNING, false)) {
+  setPref(ANALYSIS_RUNNING, undefined);
+  if (getPref(SMART_DETECTION, true)) {
+    setPref(SMART_DETECTION, false);
+    showToast(
+      'The app closed while analyzing a photo, likely out of memory. Outfit detection is now off so adding photos works; you can turn it back on in Settings.',
+      { notice: true, duration: 20000 },
+    );
+  }
+}
 
 showTab(location.hash.slice(1));
 for (const init of [initSettings, () => initAddItem({ onSaved: reloadCloset })]) {

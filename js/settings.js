@@ -1,3 +1,4 @@
+import { SMART_DETECTION, getPref, setPref } from './prefs.js';
 import { closeSheet, openSheet, setupSheet } from './ui.js';
 
 const STORAGE_KEY = 'appearance';
@@ -20,6 +21,13 @@ function applyAppearance(value) {
 
 export function initSettings() {
   applyAppearance(readAppearance());
+
+  const smartDetection = document.getElementById('smart-detection');
+  smartDetection.checked = getPref(SMART_DETECTION, true);
+  smartDetection.addEventListener('change', () => setPref(SMART_DETECTION, smartDetection.checked));
+  document.getElementById('open-settings').addEventListener('click', () => {
+    smartDetection.checked = getPref(SMART_DETECTION, true);
+  });
   setupSheet(sheet, () => closeSheet(sheet));
   document.getElementById('open-settings').addEventListener('click', () => openSheet(sheet));
   document.getElementById('settings-done').addEventListener('click', () => closeSheet(sheet));

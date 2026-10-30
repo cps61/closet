@@ -5,6 +5,7 @@ import { CATEGORIES, categoryLabel } from './categories.js';
 import { newId, putItem, requestPersistentStorage } from './db.js';
 import { imageSize, prepareImage } from './images.js';
 import { analyzePhoto } from './pieces.js';
+import { ANALYSIS_RUNNING, SMART_DETECTION, getPref, setPref } from './prefs.js';
 import { closeSheet, openSheet, setupSheet } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
@@ -84,8 +85,12 @@ async function analyze(current) {
   sourceImage.hidden = false;
   setStage(current, 'Finding clothes…');
 
+  // If the app is killed mid-analysis (iOS closes pages that use too much
+  // memory), this flag is still set on the next launch; see app.js.
+  setPref(ANALYSIS_RUNNING, true);
   try {
     const result = await analyzePhoto(current.prepared, {
+      smart: getPref(SMART_DETECTION, true),
       onStage: (text) => setStage(current, text),
       onDownload: ({ file, loaded, total }) => {
         current.download.set(file, { loaded, total });
@@ -102,6 +107,8 @@ async function analyze(current) {
         : 'Something went wrong. The first time, the app needs internet to download its AI models.',
       { canRetry: true },
     );
+  } finally {
+    setPref(ANALYSIS_RUNNING, undefined);
   }
 }
 

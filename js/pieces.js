@@ -41,21 +41,25 @@ const ALL_LABEL_IDS = LABELS.map((label) => label.id);
 
 /**
  * @param {Blob} prepared  upright, downscaled JPEG (see prepareImage)
- * @param {object} callbacks
+ * @param {object} options
+ *   smart                            find pieces on a person and recognize types;
+ *                                    when false, only the background is removed
  *   onStage(text)                    what's happening now
  *   onDownload({file, loaded, total}) first-run model download progress
  * @returns {Promise<{ worn: boolean, pieces: Piece[] }>}
  *   Piece: { cutout: Blob, labelId, color, category, name }
  */
-export async function analyzePhoto(prepared, { onStage = () => {}, onDownload } = {}) {
+export async function analyzePhoto(prepared, { smart = true, onStage = () => {}, onDownload } = {}) {
   setDownloadListener(onDownload);
   try {
-    onStage('Finding clothes…');
     let segmentation = null;
-    try {
-      segmentation = await segmentClothing(prepared);
-    } catch (error) {
-      console.warn('Clothing segmentation unavailable; treating as a single item', error);
+    if (smart) {
+      onStage('Finding clothes…');
+      try {
+        segmentation = await segmentClothing(prepared);
+      } catch (error) {
+        console.warn('Clothing segmentation unavailable; treating as a single item', error);
+      }
     }
 
     onStage('Removing background…');
@@ -67,8 +71,9 @@ export async function analyzePhoto(prepared, { onStage = () => {}, onDownload } 
       if (pieces.length > 0) return { worn: true, pieces };
     }
 
-    onStage('Identifying item…');
     const cutout = await trimTransparent(matte);
+    if (!smart) return { worn: false, pieces: [{ cutout, labelId: null, color: null, category: 'tops', name: '' }] };
+    onStage('Identifying item…');
     return { worn: false, pieces: [await describePiece(cutout, ALL_LABEL_IDS, 'tops', prepared)] };
   } finally {
     setDownloadListener(null);
