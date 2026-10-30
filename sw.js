@@ -1,9 +1,13 @@
 // Makes the app open offline once it has been loaded.
-// App files: network first (so updates show up right away), cache as fallback.
-// Library code from esm.sh: cache first (versioned URLs never change).
-// The background-removal model caches itself.
+//
+// App files (including the page itself): always revalidated with the server,
+// bypassing the browser's HTTP cache, so an update can never mix an old page
+// with new scripts. The offline copy is only used when the network fails.
+// Library code from esm.sh / jsDelivr: cache first (versioned URLs never change).
+// The AI models cache themselves.
 
-const SHELL_CACHE = 'closet-shell-v4';
+const APP_VERSION = '5'; // keep in sync with index.html and js/app.js
+const SHELL_CACHE = `closet-shell-v${APP_VERSION}`;
 const LIBRARY_CACHE = 'closet-lib-v1';
 const LIBRARY_HOSTS = ['esm.sh', 'cdn.jsdelivr.net'];
 
@@ -22,6 +26,7 @@ const SHELL_FILES = [
   './js/images.js',
   './js/labels.js',
   './js/pieces.js',
+  './js/polyfills.js',
   './js/prefs.js',
   './js/settings.js',
   './js/ui.js',
@@ -32,7 +37,11 @@ const SHELL_FILES = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_FILES)));
+  event.waitUntil(
+    caches.open(SHELL_CACHE).then((cache) =>
+      Promise.all(SHELL_FILES.map((file) => fetch(file, { cache: 'no-cache' }).then((r) => r.ok && cache.put(file, r)))),
+    ),
+  );
   self.skipWaiting();
 });
 
@@ -57,16 +66,26 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+async function fetchFresh(request) {
+  // A navigation Request can't be re-issued with options, so fetch its URL.
+  // `no-cache` = always ask the server whether the file changed.
+  const response = await fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' });
+  // Safari refuses redirected responses for navigations; let the browser redo it.
+  if (response.redirected && request.mode === 'navigate') return fetch(request);
+  return response;
+}
+
 async function networkFirst(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
-    // Always revalidate app files with the server so an update never mixes
-    // old and new files. Navigations keep their original request.
-    const response = request.mode === 'navigate' ? await fetch(request) : await fetch(request.url, { cache: 'no-cache' });
+    const response = await fetchFresh(request);
     if (response.ok) cache.put(request, response.clone());
     return response;
   } catch {
-    return (await cache.match(request, { ignoreSearch: true })) ?? (await cache.match('./index.html'));
+    const offline =
+      (await cache.match(request, { ignoreSearch: true })) ??
+      (request.mode === 'navigate' ? await cache.match('./index.html') : undefined);
+    return offline ?? Response.error();
   }
 }
 
