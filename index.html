@@ -74,8 +74,30 @@
     </button>
   </nav>
 
-  <!-- Without a `capture` attribute iOS offers Photo Library / Take Photo / Choose File. -->
-  <input type="file" id="photo-input" class="visually-hidden" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+  <!-- Without a `capture` attribute iOS offers Photo Library / Take Photo / Choose File.
+       Single-select returns as soon as a photo is tapped; multi-select needs the picker's "Add" button. -->
+  <input type="file" id="photo-input" class="visually-hidden" accept="image/*" tabindex="-1" aria-hidden="true">
+  <input type="file" id="photos-input" class="visually-hidden" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+
+  <dialog class="sheet" id="add-choice-sheet" aria-labelledby="add-choice-title">
+    <div class="sheet-header">
+      <span></span>
+      <h2 class="sheet-title" id="add-choice-title">Add to Closet</h2>
+      <button type="button" class="text-button text-button--bold" id="add-choice-cancel">Cancel</button>
+    </div>
+    <div class="sheet-body choice-list">
+      <button type="button" class="choice" id="choose-one">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5Z"/><circle cx="12" cy="13" r="3.2"/></svg>
+        <span><strong>One photo</strong><small>Take a photo, or tap one in your library</small></span>
+      </button>
+      <button type="button" class="choice" id="choose-many">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="13" height="13" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/></svg>
+        <span><strong>Several photos</strong><small>Tap each photo, then tap “Add” at the top right</small></span>
+      </button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="alert" hidden></div>
 
   <dialog class="sheet sheet--tall" id="add-sheet" aria-labelledby="add-title">
     <div class="sheet-header">

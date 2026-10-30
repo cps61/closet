@@ -3,7 +3,7 @@
 // Library code from esm.sh: cache first (versioned URLs never change).
 // The background-removal model caches itself.
 
-const SHELL_CACHE = 'closet-shell-v2';
+const SHELL_CACHE = 'closet-shell-v3';
 const LIBRARY_CACHE = 'closet-lib-v1';
 const LIBRARY_HOSTS = ['esm.sh', 'cdn.jsdelivr.net'];
 
@@ -59,7 +59,9 @@ self.addEventListener('fetch', (event) => {
 async function networkFirst(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
-    const response = await fetch(request);
+    // Always revalidate app files with the server so an update never mixes
+    // old and new files. Navigations keep their original request.
+    const response = request.mode === 'navigate' ? await fetch(request) : await fetch(request.url, { cache: 'no-cache' });
     if (response.ok) cache.put(request, response.clone());
     return response;
   } catch {
