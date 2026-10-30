@@ -523,6 +523,46 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .button-block { display: block; width: 100%; }
 .button-primary:disabled { opacity: 0.35; transform: none; }
 
+/* ---------- Add choice ---------- */
+
+.choice-list { display: grid; gap: 10px; padding-left: var(--gutter); padding-right: var(--gutter); }
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+  text-align: left;
+  transition: transform 0.12s, opacity 0.12s;
+}
+.choice:active { transform: scale(0.98); opacity: 0.8; }
+.choice svg { flex: none; width: 28px; height: 28px; }
+.choice span { display: grid; gap: 3px; }
+.choice strong { font-size: 16px; font-weight: 600; }
+.choice small { color: var(--text-2); font-size: 14px; line-height: 1.35; }
+
+/* ---------- Error toast ---------- */
+
+.toast {
+  position: fixed;
+  top: calc(var(--safe-top) + 10px);
+  left: var(--gutter);
+  right: var(--gutter);
+  z-index: 100;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: var(--shadow);
+  animation: rise-in 0.3s var(--ease-out) both;
+}
+
 /* ---------- Item detail ---------- */
 
 .detail-image {
