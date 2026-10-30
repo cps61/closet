@@ -3,7 +3,7 @@
 // Library code from esm.sh: cache first (versioned URLs never change).
 // The background-removal model caches itself.
 
-const SHELL_CACHE = 'closet-shell-v3';
+const SHELL_CACHE = 'closet-shell-v4';
 const LIBRARY_CACHE = 'closet-lib-v1';
 const LIBRARY_HOSTS = ['esm.sh', 'cdn.jsdelivr.net'];
 
@@ -22,6 +22,7 @@ const SHELL_FILES = [
   './js/images.js',
   './js/labels.js',
   './js/pieces.js',
+  './js/prefs.js',
   './js/settings.js',
   './js/ui.js',
   './models/label-embeddings.json',
