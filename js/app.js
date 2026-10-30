@@ -1,20 +1,61 @@
 import { initAddItem, startImport } from './add-item.js';
 import { initCloset, reloadCloset } from './closet.js';
 import { initSettings } from './settings.js';
+import { closeSheet, openSheet, setupSheet } from './ui.js';
 
-const photoInput = document.getElementById('photo-input');
+const $ = (id) => document.getElementById(id);
 const tabs = [...document.querySelectorAll('.tab')];
-const views = { closet: document.getElementById('view-closet'), canvas: document.getElementById('view-canvas') };
+const views = { closet: $('view-closet'), canvas: $('view-canvas') };
 
-function requestPhoto() {
-  photoInput.click();
+// ---------- Errors: always visible, never silent ----------
+
+const toast = $('toast');
+let toastTimer;
+
+function showError(message) {
+  toast.textContent = `Something went wrong: ${message}`;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (toast.hidden = true), 10000);
+}
+toast.addEventListener('click', () => (toast.hidden = true));
+window.addEventListener('error', (event) => showError(event.message));
+window.addEventListener('unhandledrejection', (event) => showError(event.reason?.message ?? String(event.reason)));
+
+// ---------- Adding photos ----------
+
+const choiceSheet = $('add-choice-sheet');
+setupSheet(choiceSheet, () => closeSheet(choiceSheet));
+$('add-choice-cancel').addEventListener('click', () => closeSheet(choiceSheet));
+
+function requestPhotos() {
+  openSheet(choiceSheet);
 }
 
-photoInput.addEventListener('change', () => {
-  const files = [...(photoInput.files ?? [])];
-  photoInput.value = ''; // so picking the same photos again still fires `change`
-  if (files.length) startImport(files);
-});
+function pickWith(input) {
+  input.click(); // must happen inside the tap, before anything async
+  closeSheet(choiceSheet);
+}
+
+$('choose-one').addEventListener('click', () => pickWith($('photo-input')));
+$('choose-many').addEventListener('click', () => pickWith($('photos-input')));
+
+for (const input of [$('photo-input'), $('photos-input')]) {
+  input.addEventListener('change', () => {
+    const files = [...(input.files ?? [])];
+    input.value = ''; // so picking the same photos again still fires `change`
+    if (!files.length) return;
+    try {
+      startImport(files);
+    } catch (error) {
+      showError(error.message);
+    }
+  });
+}
+
+$('add-item').addEventListener('click', requestPhotos);
+
+// ---------- Tabs ----------
 
 function showTab(name) {
   if (!views[name]) name = 'closet';
@@ -30,20 +71,26 @@ function showTab(name) {
 for (const tab of tabs) tab.addEventListener('click', () => showTab(tab.dataset.tab));
 
 document.addEventListener('closet:changed', ({ detail: { count } }) => {
-  document.getElementById('canvas-message').textContent =
+  $('canvas-message').textContent =
     count === 0
       ? 'Add a few pieces to your closet, then come back here to mix and match.'
       : `The drag-and-drop builder is coming next. ${count} ${count === 1 ? 'piece' : 'pieces'} ready to style.`;
 });
 
-document.getElementById('add-item').addEventListener('click', requestPhoto);
+// ---------- Start ----------
 
 showTab(location.hash.slice(1));
-initSettings();
-initAddItem({ onSaved: reloadCloset });
-initCloset({ onAddRequested: requestPhoto }).catch((error) => {
+for (const init of [initSettings, () => initAddItem({ onSaved: reloadCloset })]) {
+  try {
+    init();
+  } catch (error) {
+    console.error(error);
+    showError(error.message);
+  }
+}
+initCloset({ onAddRequested: requestPhotos }).catch((error) => {
   console.error(error);
-  alert("Couldn't open your closet storage. If you're in Private Browsing, switch to a normal tab.");
+  showError("Couldn't open your closet storage. If you're in Private Browsing, switch to a normal tab.");
 });
 
 if ('serviceWorker' in navigator && window.isSecureContext) {
