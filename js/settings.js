@@ -4,6 +4,7 @@ import { closeSheet, openSheet, setupSheet } from './ui.js';
 const STORAGE_KEY = 'appearance';
 const sheet = document.getElementById('settings-sheet');
 const options = [...sheet.querySelectorAll('[data-appearance]')];
+const smartDetection = document.getElementById('smart-detection');
 
 function readAppearance() {
   try {
@@ -22,15 +23,14 @@ function applyAppearance(value) {
 export function initSettings() {
   applyAppearance(readAppearance());
 
-  const smartDetection = document.getElementById('smart-detection');
-  smartDetection.checked = getPref(SMART_DETECTION, true);
-  smartDetection.addEventListener('change', () => setPref(SMART_DETECTION, smartDetection.checked));
+  setupSheet(sheet, () => closeSheet(sheet));
   document.getElementById('open-settings').addEventListener('click', () => {
     smartDetection.checked = getPref(SMART_DETECTION, true);
+    openSheet(sheet);
   });
-  setupSheet(sheet, () => closeSheet(sheet));
-  document.getElementById('open-settings').addEventListener('click', () => openSheet(sheet));
   document.getElementById('settings-done').addEventListener('click', () => closeSheet(sheet));
+
+  smartDetection.addEventListener('change', () => setPref(SMART_DETECTION, smartDetection.checked));
 
   for (const option of options) {
     option.addEventListener('click', () => {

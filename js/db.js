@@ -32,19 +32,44 @@ async function run(storeName, mode, operation) {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, mode);
     const request = operation(transaction.objectStore(storeName));
+    const fail = () => reject(transaction.error ?? request.error ?? new Error('Storage operation failed'));
     transaction.oncomplete = () => resolve(request.result);
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () => reject(transaction.error);
+    transaction.onerror = fail;
+    transaction.onabort = fail;
   });
+}
+
+// Images are stored as raw bytes ({ bytes: ArrayBuffer, type }) rather than Blobs:
+// some WebKit builds can't put Blobs into IndexedDB. Items saved as Blobs by
+// earlier versions still load.
+const IMAGE_FIELDS = ['cutout', 'original'];
+
+async function toStorable(item) {
+  const stored = { ...item };
+  for (const field of IMAGE_FIELDS) {
+    const blob = item[field];
+    if (blob instanceof Blob) stored[field] = { bytes: await blob.arrayBuffer(), type: blob.type };
+  }
+  return stored;
+}
+
+function fromStored(stored) {
+  const item = { ...stored };
+  for (const field of IMAGE_FIELDS) {
+    const value = stored[field];
+    if (value && !(value instanceof Blob) && value.bytes) item[field] = new Blob([value.bytes], { type: value.type });
+  }
+  return item;
 }
 
 export async function getAllItems() {
   const items = await run('items', 'readonly', (store) => store.getAll());
-  return items.sort((a, b) => b.createdAt - a.createdAt);
+  return items.map(fromStored).sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export function putItem(item) {
-  return run('items', 'readwrite', (store) => store.put(item));
+export async function putItem(item) {
+  const stored = await toStorable(item); // convert before opening the transaction
+  return run('items', 'readwrite', (store) => store.put(stored));
 }
 
 export function deleteItem(id) {
